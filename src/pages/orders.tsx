@@ -33,7 +33,7 @@ function orders() {
   return (
     <>
       <div className="w-full px-10 mt-4">
-        <h1 className="text-2xl font-bold mb-6">Orders</h1>
+        <h1 className="text-2xl font-bold mb-6"> Orders </h1>
        
       {orders.length === 0 ? (
         <p>No orders found.</p>
