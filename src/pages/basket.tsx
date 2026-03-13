@@ -1,5 +1,9 @@
 import { useSelector, useDispatch } from "react-redux";
-import { increaseQuantity, decreaseQuantity } from "../redux/cartSlice";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { FaTrash } from "react-icons/fa";
+import { toast } from "react-toastify";
+import { db } from "../config/firebase";
+import { increaseQuantity, decreaseQuantity, removeQuantity, clearCart } from "../redux/cartSlice";
 
 function Basket() {
   const dispatch = useDispatch();
@@ -10,6 +14,64 @@ function Basket() {
     0
   );
 
+  const removeCart = (id:any) => {
+    dispatch(removeQuantity(id));
+  }
+
+  function getTempOrderId(): string {
+    const existingId = localStorage.getItem("tempOrderId");
+    if (existingId) return existingId;
+    const newId = `TEMP-${Date.now()}`;
+    localStorage.setItem("tempOrderId", newId);
+    return newId;
+  }
+
+  function calculateSavings(item: any): number {
+    if (!item.offer) return 0;
+    let savings = 0;
+    if (item.offer && item.offer.discount > 0) {
+      if (item.offer.type === "flat") {
+        savings = item.offer.discount * item.quantity;
+      } else if (item.offer.type === "percentage") {
+        savings = (item.price * item.offer.discount) / 100 * item.quantity;
+      }
+    }
+    return savings;
+  }
+
+  const handleCheckout = async (subTotal:number, totalDiscount:number) => {
+    
+    if (cart.length === 0) return alert("Cart is empty!");
+
+    const tempOrderId = getTempOrderId();
+
+    const orderData = {
+      id: tempOrderId,
+      items: cart.map((item: any) => ({
+        productId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        offer: item.offer || null,
+        savingAmount: calculateSavings(item),
+      })),
+      subTotal: Number(subTotal.toFixed(2)),
+      totalDiscount: Number(totalDiscount.toFixed(2)),
+      totalAmount: Number((subTotal - totalDiscount).toFixed(2)),
+      createdAt: serverTimestamp(),
+      status: "pending",
+    }
+    try {
+      console.log(orderData, '====');
+      await addDoc(collection(db, "orders"), orderData);
+      dispatch(clearCart());
+      toast.success(`Order placed successfully`);
+    } catch(e) {
+      console.log(e, '=====');
+      alert("Failed to place order. Please try again.");
+    }
+  }
+  
   let totalDiscount = 0;
 
   return (
@@ -22,17 +84,25 @@ function Basket() {
           { cart.map((item: any) => {
               let itemTotal = item.price * item.quantity;
               let savings = 0;
-              if (item.offer) {
-                savings = item.offer.discount * item.quantity;
+              if (item.offer && item.offer.discount > 0) {
+                if (item.offer.type === "flat") {
+                  savings = item.offer.discount * item.quantity;
+                } else if (item.offer.type === "percentage") {
+                  savings = (item.price * item.offer.discount) / 100 * item.quantity;
+                }
               }
               totalDiscount += savings;
+              let itemCost = itemTotal - savings;
               return (
                 <div key={item.id} className="border-b py-4">
                   
                   <div className="flex justify-between items-center">
                     <div className="flex gap-6">
-                      <span>{item.name}</span>
-                      <span>£ {item.price}</span>
+                      <span><FaTrash className="inline-block align-middle mr-1 mb-1 text-red-800" size={12} onClick={()=>removeCart(item.id)}/></span> <span>{item.name}</span>
+                      <span>£ {item.price.toFixed(2)}</span>
+                      { item?.offer?.description &&
+                        <span className="text-sm text-green-500 font-bold">({item?.offer?.description})</span>
+                      }
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -47,13 +117,13 @@ function Basket() {
                   </div>
 
                   { savings > 0 &&
-                    <div className="text-right mt-1 font-small text-danger">
+                    <div className="text-right mt-1 text-sm text-red-500">
                       Savings £{savings.toFixed(2)}
                     </div>
                   }
 
                   <div className="text-right mt-1 font-medium">
-                    Item cost £{itemTotal.toFixed(2)}
+                    Item cost £{itemCost.toFixed(2)}
                   </div>
 
                 </div>
@@ -78,7 +148,14 @@ function Basket() {
 
           </div>
 
-        </div> :
+          <div className="mt-6 text-right space-y-2">
+            <button onClick={()=>handleCheckout(subTotal, totalDiscount)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"> Checkout </button>
+          </div> 
+
+        </div> 
+        
+            
+        :
 
         <div className="bg-white shadow-md rounded p-6">
           <div className="mt-6 text-center space-y-2">

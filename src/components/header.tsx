@@ -18,6 +18,7 @@ const Header: React.FC = () => {
         {/* Menu */}
         <nav className="flex gap-6">
           <Link to="/" className="hover:text-gray-200">Products</Link>
+          <Link to="/orders" className="hover:text-gray-200">Orders</Link>
           <Link to="/cart" className="hover:text-gray-200">Cart</Link>
           <a href="#" className="relative inline-block hover:text-gray-200">
             <FaShoppingCart size={22} />

@@ -45,7 +45,11 @@ function productList() {
               </h3>
 
               <p className="text-gray-600">
-                ₹ {product.price}
+                £ {product.price.toFixed(2)}
+              </p>
+
+              <p className="text-sm text-red-500">
+                {product?.offer?.description}
               </p>
 
               <button
