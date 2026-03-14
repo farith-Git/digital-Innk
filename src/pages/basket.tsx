@@ -1,10 +1,9 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { db } from "../config/firebase";
-import { increaseQuantity, decreaseQuantity, removeQuantity, clearCart } from "../redux/cartSlice";
+import { increaseQuantity, decreaseQuantity, clearCart } from "../redux/cartSlice";
 
 function Basket() {
   const dispatch = useDispatch();
@@ -16,9 +15,9 @@ function Basket() {
     0
   );
 
-  const removeCart = (id:any) => {
-    dispatch(removeQuantity(id));
-  }
+  // const removeCart = (id:any) => {
+  //   dispatch(removeQuantity(id));
+  // }
 
   function getTempOrderId(): string {
     const existingId = localStorage.getItem("tempOrderId");
@@ -133,10 +132,10 @@ function Basket() {
                   
                   <div className="flex justify-between items-center">
                     <div className="flex gap-6">
-                      <span><FaTrash className="inline-block align-middle mr-1 mb-1 text-red-800" size={12} onClick={()=>removeCart(item.id)}/></span> <span>{item.name}</span>
+                      {<span>{item.name}</span>}
                       <span>£ {item.price.toFixed(2)}</span>
-                      { item?.offer?.description &&
-                        <span className="text-sm text-green-500 font-bold">({item?.offer?.description})</span>
+                      { item?.specialOffer?.description &&
+                        <span className="text-sm text-green-500 font-bold">({item?.specialOffer?.description})</span>
                       }
                     </div>
 
