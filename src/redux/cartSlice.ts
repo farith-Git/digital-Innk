@@ -10,6 +10,11 @@ type CartItem = {
     discount: number;
     type: "flat" | "percentage";
   };
+  specialOffer?: {
+    description: string;
+    discount: number;
+    type: "flat" | "percentage";
+  };
 };
 
 const cartSlice = createSlice({
@@ -27,7 +32,7 @@ const cartSlice = createSlice({
                     name: product.name,
                     price: product.price,
                     quantity: 1,
-                    offer: product.offer
+                    specialOffer: product.specialOffer
                 });
             }
         },

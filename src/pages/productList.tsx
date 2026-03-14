@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { db } from "../config/firebase";
 import { addToCart } from "../redux/cartSlice";
+import { getProductOffer } from "../utils/getProductOffer";
 
 function productList() {
   const dispatch = useDispatch();
@@ -26,7 +27,11 @@ function productList() {
   }, []);
 
   const buyProduct = (product: any) => {
-    dispatch(addToCart(product));
+    const offer = getProductOffer(product.name.trim());
+    dispatch(addToCart({
+      ...product,
+      specialOffer: offer
+    }));
     toast.success(`${product.name} added to cart!`);
   };
 
@@ -48,8 +53,8 @@ function productList() {
                 £ {product.price.toFixed(2)}
               </p>
 
-              <p className="text-sm text-red-500">
-                {product?.offer?.description}
+              <p className="text-sm text-red-500 font-bold">
+                {getProductOffer(product.name.trim())?.description}
               </p>
 
               <button

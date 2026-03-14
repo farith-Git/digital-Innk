@@ -1,4 +1,5 @@
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -7,6 +8,7 @@ import { increaseQuantity, decreaseQuantity, removeQuantity, clearCart } from ".
 
 function Basket() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const cart = useSelector((state: any) => state.cart);
 
   const subTotal = cart.reduce(
@@ -26,18 +28,44 @@ function Basket() {
     return newId;
   }
 
+  // function calculateSavingsOld(item: any): number {
+  //   if (!item.offer) return 0;
+  //   let savings = 0;
+  //   if (item.offer && item.offer.discount > 0) {
+  //     if (item.offer.type === "flat") {
+  //       savings = item.offer.discount * item.quantity;
+  //     } else if (item.offer.type === "percentage") {
+  //       savings = (item.price * item.offer.discount) / 100 * item.quantity;
+  //     }
+  //   }
+  //   return savings;
+  // }
+
+
   function calculateSavings(item: any): number {
-    if (!item.offer) return 0;
+    if (!item.specialOffer) return 0;
     let savings = 0;
-    if (item.offer && item.offer.discount > 0) {
-      if (item.offer.type === "flat") {
-        savings = item.offer.discount * item.quantity;
-      } else if (item.offer.type === "percentage") {
-        savings = (item.price * item.offer.discount) / 100 * item.quantity;
+    if (item.specialOffer.type === "buy_one_get_one") {
+      const freeQty = Math.floor(item.quantity / 2);
+      savings = freeQty * item.price;
+    }
+
+    if (item.specialOffer.type === "third_off") {
+      savings = item.quantity * item.price * (1 / 3);
+    }
+
+    if (item.specialOffer.type === "half_price") {
+      const soupItem = cart.find((c:any) => c.name.toLowerCase() === "soup");
+      if (soupItem) {
+        const eligibleBread = Math.min(soupItem.quantity, item.quantity);
+        savings = eligibleBread * item.price * 0.5;
       }
     }
     return savings;
   }
+
+
+  
 
   const handleCheckout = async (subTotal:number, totalDiscount:number) => {
     
@@ -52,7 +80,7 @@ function Basket() {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        offer: item.offer || null,
+        offer: item.specialOffer || null,
         savingAmount: calculateSavings(item),
       })),
       subTotal: Number(subTotal.toFixed(2)),
@@ -66,6 +94,7 @@ function Basket() {
       await addDoc(collection(db, "orders"), orderData);
       dispatch(clearCart());
       toast.success(`Order placed successfully`);
+      navigate("/orders");
     } catch(e) {
       console.log(e, '=====');
       alert("Failed to place order. Please try again.");
@@ -83,14 +112,20 @@ function Basket() {
 
           { cart.map((item: any) => {
               let itemTotal = item.price * item.quantity;
+              
               let savings = 0;
-              if (item.offer && item.offer.discount > 0) {
-                if (item.offer.type === "flat") {
-                  savings = item.offer.discount * item.quantity;
-                } else if (item.offer.type === "percentage") {
-                  savings = (item.price * item.offer.discount) / 100 * item.quantity;
-                }
+              // if (item.offer && item.offer.discount > 0) {
+              //   if (item.offer.type === "flat") {
+              //     savings = item.offer.discount * item.quantity;
+              //   } else if (item.offer.type === "percentage") {
+              //     savings = (item.price * item.offer.discount) / 100 * item.quantity;
+              //   }
+              // }
+
+              if (item.specialOffer) {
+                savings = calculateSavings(item);
               }
+
               totalDiscount += savings;
               let itemCost = itemTotal - savings;
               return (
